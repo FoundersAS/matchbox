@@ -1,83 +1,4 @@
-import fs from 'fs';
-import each from 'each-series';
-import textract from 'textract';
-import thunky from 'thunky';
-
-const normalizeEmails = function(xs, cb) {
-  const emails = [];
-  each(xs, function(obj, i, done) {
-    obj.date = new Date(obj.date);
-    let finished = false;
-    (obj.attachments || []).some(function(attachment) {
-      if (attachment.filename.indexOf('.pdf') !== -1) {
-        textract.fromBufferWithMime('application/pdf', new Buffer(attachment.attachment, 'base64'), function(err, txt) {
-          obj.message = txt;
-          delete obj.attachments;
-          emails.push(obj);
-          done();
-        });
-        return (finished = true);
-      }
-    });
-    if (finished) return;
-
-    delete obj.attachments;
-    emails.push(obj);
-    done();
-  }, function(err) {
-    if (err) return cb(err);
-    cb(null, emails);
-  });
-};
-
-const getEmails = thunky(function(cb) {
-  fs.readdir('./gmail-backup/', function(err, files) {
-    console.log(files.length);
-    const emails = [];
-    each(files, function(fl, i , done) {
-      fs.readFile('./gmail-backup/' + fl, function(err, content) {
-        if (err) return done(err);
-
-        try {
-          var obj = JSON.parse(content.toString());
-        } catch (e) {
-          var obj = {};
-        }
-
-        // if is base64
-        if (obj.message && /^[A-Za-z0-9\/+=\r\n]+$/.test(obj.message)) {
-          const buf = new Buffer(obj.message, 'base64');
-          obj.message = buf.toString();
-        }
-        emails.push(obj);
-        done();
-      });
-    }, function(err) {
-      if (err) return cb(err);
-      cb(null, emails);
-    });
-  });
-});
-
-const findCloseEmails = function(date, cb) {
-  const fiveDays = 1000 * 3600 * 24 * 5;
-
-  const onnormalize = function(err, emails) {
-    if (err) return cb(err);
-    cb(null, emails.filter(function(email) {
-      return (Math.abs(email.date.getTime() - date.getTime()) < fiveDays) && email.from.indexOf('joshua@founders.as') === -1;
-    }));
-  }
-
-  const onemails = function(err, emails) {
-    if (err) return cb(err);
-    normalizeEmails(emails, onnormalize);
-  }
-
-  getEmails(onemails);
-};
-
-const match = function(transaction, cb) {
+const match = function(transaction, emails, cb) {
   const switchCommasAndDots = function(str) {
     return str.split('').map(function(chr) {
       if (chr === '.') return ',';
@@ -93,15 +14,11 @@ const match = function(transaction, cb) {
     return amounts.indexOf(amount) !== -1 || amounts.indexOf(switchCommasAndDots(amount)) !== -1;
   };
 
-  const onemails = function(err, emails) {
-    if (err) return cb(err);
-    cb(null, emails.filter(function(email)  {
-      return containsAmount(transaction.amount, email.message) || 
-             (transaction.amounts || []).some(a => containsAmount(a, email.message));
-    }));
-  };
-
-  findCloseEmails(transaction.date, onemails);
+  const fiveDays = 1000 * 3600 * 24 * 5;
+  const closeEmails = emails.filter(email => Math.abs(email.date.getTime() - transaction.date.getTime()) < fiveDays);
+  cb(null, closeEmails.filter(function(email)  {
+    return containsAmount(transaction.amount, email.message);
+  }));
 };
 
 export default match;
