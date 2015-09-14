@@ -1,13 +1,13 @@
-var fs = require('fs');
-var each = require('each-series');
-var textract = require('textract');
-var thunky = require('thunky');
+import fs from 'fs';
+import each from 'each-series';
+import textract from 'textract';
+import thunky from 'thunky';
 
-var normalizeEmails = function(xs, cb) {
-  var emails = [];
+const normalizeEmails = function(xs, cb) {
+  const emails = [];
   each(xs, function(obj, i, done) {
     obj.date = new Date(obj.date);
-    var finished = false;
+    let finished = false;
     (obj.attachments || []).some(function(attachment) {
       if (attachment.filename.indexOf('.pdf') !== -1) {
         textract.fromBufferWithMime('application/pdf', new Buffer(attachment.attachment, 'base64'), function(err, txt) {
@@ -30,10 +30,10 @@ var normalizeEmails = function(xs, cb) {
   });
 };
 
-var getEmails = thunky(function(cb) {
+const getEmails = thunky(function(cb) {
   fs.readdir('./gmail-backup/', function(err, files) {
     console.log(files.length);
-    var emails = [];
+    const emails = [];
     each(files, function(fl, i , done) {
       fs.readFile('./gmail-backup/' + fl, function(err, content) {
         if (err) return done(err);
@@ -46,7 +46,7 @@ var getEmails = thunky(function(cb) {
 
         // if is base64
         if (obj.message && /^[A-Za-z0-9\/+=\r\n]+$/.test(obj.message)) {
-          var buf = new Buffer(obj.message, 'base64');
+          const buf = new Buffer(obj.message, 'base64');
           obj.message = buf.toString();
         }
         emails.push(obj);
@@ -59,17 +59,17 @@ var getEmails = thunky(function(cb) {
   });
 });
 
-var findCloseEmails = function(date, cb) {
-  var fiveDays = 1000 * 3600 * 24 * 5;
+const findCloseEmails = function(date, cb) {
+  const fiveDays = 1000 * 3600 * 24 * 5;
 
-  var onnormalize = function(err, emails) {
+  const onnormalize = function(err, emails) {
     if (err) return cb(err);
     cb(null, emails.filter(function(email) {
       return (Math.abs(email.date.getTime() - date.getTime()) < fiveDays) && email.from.indexOf('joshua@founders.as') === -1;
     }));
   }
 
-  var onemails = function(err, emails) {
+  const onemails = function(err, emails) {
     if (err) return cb(err);
     normalizeEmails(emails, onnormalize);
   }
@@ -77,8 +77,8 @@ var findCloseEmails = function(date, cb) {
   getEmails(onemails);
 };
 
-var match = function(transaction, cb) {
-  var switchCommasAndDots = function(str) {
+const match = function(transaction, cb) {
+  const switchCommasAndDots = function(str) {
     return str.split('').map(function(chr) {
       if (chr === '.') return ',';
       if (chr === ',') return '.';
@@ -86,25 +86,25 @@ var match = function(transaction, cb) {
     }).join('');
   };
 
-  var containsAmount = function(amount, str) {
+  const containsAmount = function(amount, str) {
     str = str || '';
     if (!amount) return false;
-    var amounts = str.match(/[\d.,]+/g) || [];
+    const amounts = str.match(/[\d.,]+/g) || [];
     return amounts.indexOf(amount) !== -1 || amounts.indexOf(switchCommasAndDots(amount)) !== -1;
   };
 
-  var onemails = function(err, emails) {
+  const onemails = function(err, emails) {
     if (err) return cb(err);
-    cb(null, emails.filter(function(email) {
+    cb(null, emails.filter(function(email)  {
       return containsAmount(transaction.amount, email.message) || 
-             (transaction.amounts || []).some(function(a) { return containsAmount(a, email.message)});
+             (transaction.amounts || []).some(a => containsAmount(a, email.message));
     }));
   };
 
   findCloseEmails(transaction.date, onemails);
 };
 
-module.exports = match;
+export default match;
 
 //match({amount: '84,14', date: new Date('08.04.2015')}, function(err, matches) {
 //  console.log(err, matches, matches.length);
@@ -114,12 +114,9 @@ module.exports = match;
 //  console.log(err, matches.length);
 //});
 
-//var i =  0;
 //getEmails(function(err, emails) {
 //  emails.forEach(function(email) {
-//    //console.log(email.subject);
-//    var msg = email.message || '';
-//    if (email.subject === 'Launch Party - a celebration of Live') console.log(email);
+//    delete email.attachments
+//    console.log(JSON.stringify(email))
 //  });
-//  console.log(i);
 //});

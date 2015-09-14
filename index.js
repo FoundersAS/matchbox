@@ -1,11 +1,11 @@
-var fs = require('fs');
-var csv = require('csv-parser');
-var through = require('through2');
-var match = require('./match');
+import fs from 'fs';
+import csv from 'csv-parser';
+import through from 'through2';
+import match from './match';
 
-var format = through.obj(function(obj, enc, cb) {
-  var dateParts = obj['Dato'].split('.');
-  var filterAmounts = function(x) {
+const format = through.obj(function(obj, enc, cb) {
+  const dateParts = obj['Dato'].split('.');
+  const filterAmounts = function(x) {
     return x.match(/\d/) && (x.indexOf('.') !== -1 || x.indexOf(',') !== -1)
   }
   cb(null, {
@@ -16,7 +16,7 @@ var format = through.obj(function(obj, enc, cb) {
   })
 });
 
-var addMatches = through.obj(function(transaction, enc, cb) {
+const addMatches = through.obj(function(transaction, enc, cb) {
   match(transaction, function(err, matches) {
     if (err) return cb(err);
     transaction.matches = matches;
@@ -24,11 +24,11 @@ var addMatches = through.obj(function(transaction, enc, cb) {
   });
 });
 
-var i = 0;
-var result = through.obj(function(transaction, enc, cb) {
+let i = 0;
+const result = through.obj(function(transaction, enc, cb) {
   if (transaction.matches.length) {
     console.log(transaction.text, '|',  transaction.matches.length);
-    console.log(transaction.matches.map(function(x) {return x.subject + ' from: ' + x.from}));
+    console.log(transaction.matches.map(x => x.subject + ' from: ' + x.from));
     ++i;
   }
   //if (transaction.text === '01.07.15 STOCKSY.COM 50,00 USD kurs: 683,620000') console.log(transaction.matches);
