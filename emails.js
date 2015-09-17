@@ -30,9 +30,8 @@ const normalizeEmails = function(xs, cb) {
   });
 };
 
-const getEmails = thunky(function(cb) {
+const getEmails = function(daterange, cb) {
   fs.readdir('./gmail-backup/', function(err, files) {
-    console.log(files.length);
     const emails = [];
     each(files, function(fl, i , done) {
       fs.readFile('./gmail-backup/' + fl, function(err, content) {
@@ -57,25 +56,6 @@ const getEmails = thunky(function(cb) {
       normalizeEmails(emails, cb);
     });
   });
-});
-
-const findCloseEmails = function(date, cb) {
-  const fiveDays = 1000 * 3600 * 24 * 5;
-
-  const onnormalize = function(err, emails) {
-    if (err) return cb(err);
-    cb(null, emails.filter(function(email) {
-      //return (Math.abs(email.date.getTime() - date.getTime()) < fiveDays) && email.from.indexOf('joshua@founders.as') === -1;
-      return (Math.abs(email.date.getTime() - date.getTime()) < fiveDays);
-    }));
-  }
-
-  const onemails = function(err, emails) {
-    if (err) return cb(err);
-    normalizeEmails(emails, onnormalize);
-  }
-
-  getEmails(onemails);
 };
 
 export default getEmails;
