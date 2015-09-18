@@ -17,7 +17,7 @@ function ondates(dates) {
 }
 
 function onemailsadded() {
-  transactions().pipe(m.addMatches()).pipe(result)
+  transactions().pipe(m.addMatches()).on('data', cosnole.log);
 }
 
 ```
