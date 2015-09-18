@@ -29,6 +29,7 @@ const matcher = function() {
     };
 
     return through.obj(function(email, enc, cb) {
+      if (!email || !email.date) return;
       db.put(key(email), email, cb);
     }, callback);
   };

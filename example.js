@@ -7,23 +7,21 @@ import from from 'from2';
 import getEmails from './emails';
 import format from './format';
 
-getEmails(null, function(err, emails) {
-  let m = matcher();
+let m = matcher();
+fs.createReadStream('./transactions-utf8-3.csv').pipe(csv({separator: ';'}))
+                                                .pipe(format())
+                                                .pipe(m.getLimitDates(ondates));
+
+function ondates(dates) {
+  getEmails(dates).pipe(m.addEmails(onemailsadded));
+}
+
+function onemailsadded() {
   fs.createReadStream('./transactions-utf8-3.csv').pipe(csv({separator: ';'}))
                                                   .pipe(format())
-                                                  .pipe(m.getLimitDates(ondates));
-
-  function ondates(dates) {
-    from.obj(emails).pipe(m.addEmails(onemailsadded));
-  }
-
-  function onemailsadded() {
-    fs.createReadStream('./transactions-utf8-3.csv').pipe(csv({separator: ';'}))
-                                                    .pipe(format())
-                                                    .pipe(m.addMatches())
-                                                    .pipe(result)
-  }
-});
+                                                  .pipe(m.addMatches())
+                                                  .pipe(result)
+}
 
 let i = 0;
 const result = through.obj(function(transaction, enc, cb) {
