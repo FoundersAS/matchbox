@@ -1,0 +1,31 @@
+{
+  "name": "matchbox",
+  "version": "0.0.0",
+  "description": "matchbox ========",
+  "main": "index.js",
+  "dependencies": {
+    "concat-stream": "^1.5.0",
+    "level": "^1.3.0",
+    "through2": "^2.0.0"
+  },
+  "devDependencies": {
+    "each-series": "^1.0.0",
+    "csv-parser": "^1.7.0",
+    "from2": "^2.1.0",
+    "textract": "^1.1.1",
+    "after-all": "^2.0.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FoundersAS/matchbox.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/FoundersAS/matchbox/issues"
+  },
+  "homepage": "https://github.com/FoundersAS/matchbox#readme"
+}
