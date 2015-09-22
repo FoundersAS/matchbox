@@ -5,7 +5,7 @@ import fs from 'fs';
 import from from 'from2';
 
 import getEmails from './emails';
-import format from './format';
+import format from './lib/formatters/transactions/sydbank';
 
 let m = matcher();
 fs.createReadStream('./transactions-utf8-3.csv').pipe(csv({separator: ';'}))
