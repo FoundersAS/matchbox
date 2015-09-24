@@ -8,17 +8,14 @@ import getEmails from './emails';
 import format from './lib/formatters/transactions/sydbank';
 
 let m = matcher();
-fs.createReadStream('./transactions-utf8-3.csv').pipe(csv({separator: ';'}))
-                                                .pipe(format())
-                                                .pipe(m.getLimitDates(ondates));
+fs.createReadStream('./transactions-utf8-3.csv').pipe(format()).pipe(m.getLimitDates(ondates));
 
 function ondates(dates) {
   getEmails(dates).pipe(m.addEmails(onemailsadded));
 }
 
 function onemailsadded() {
-  fs.createReadStream('./transactions-utf8-3.csv').pipe(csv({separator: ';'}))
-                                                  .pipe(format())
+  fs.createReadStream('./transactions-utf8-3.csv').pipe(format())
                                                   .pipe(m.addMatches())
                                                   .pipe(result)
 }
