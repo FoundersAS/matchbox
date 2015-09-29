@@ -1,11 +1,13 @@
 import through from 'through2';
-import level from 'level';
+import levelup from 'levelup';
+import leveldown from 'leveldown';
 import crypto from 'crypto';
 import concat from 'concat-stream';
+import os from 'os';
 
-const matcher = function() {
+const matcher = function(opts) {
   const that = {};
-  const db = level('emails', {valueEncoding: 'json'});
+  const db = levelup(os.tmpDir() + '/invoice-matcher' +  Date.now() + Math.random(), {valueEncoding: 'json', db: opts.db || leveldown});
 
   that.getLimitDates = function(callback) {
     let earliest = Infinity;
