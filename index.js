@@ -2,25 +2,9 @@ import matchbox from './lib/matcher';
 import transactionFormatters from './lib/formatters/transactions';
 import emailFormatters from './lib/formatters/emails';
 import fs from 'fs';
-import Gmail from 'node-gmail-api';
 import concat from 'concat-stream';
 import os from 'os';
-
-const emailSources = {
-  gmail: function(msg, daterange) {
-    const gmailDateRange = function(daterange) {
-      const from = daterange.from.getFullYear()  + '/' + 
-                   (daterange.from.getMonth() + 1) + '/' + 
-                   daterange.from.getDate();
-      const to = daterange.to.getFullYear()  + '/' + 
-                 (daterange.to.getMonth() + 1) + '/' + 
-                 daterange.to.getDate();
-      return `after:${from} before:${to}`;
-    };
-    const gmail = new Gmail(msg.email.auth.token);
-    return gmail.messages(gmailDateRange(daterange))
-  }
-}
+import emailSources from './lib/email-sources';
 
 const match = function(msg, cb) {
   const onconcat = function(transactions) {
