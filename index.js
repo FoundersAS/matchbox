@@ -12,22 +12,27 @@ const match = function(msg, cb) {
   };
 
   const onemailsadded = function() {
-    fs.createReadStream(filename).pipe(transactionFormatters[msg.csv.source]())
+    fs.createReadStream(filename).pipe(csvFormatter())
                                  .pipe(matcher.addMatches())
                                  .pipe(concat(onconcat));
   };
 
   const ondates = function(daterange) {
-    emailSources[msg.email.source](msg, daterange).pipe(emailFormatters[msg.email.source](msg.email.auth.token))
+    emails(msg, daterange).pipe(emailFormatter(msg.email.auth.token))
                                                   .pipe(matcher.addEmails(onemailsadded));
   };
 
   const onwrite = function(err) {
     if (err) return cb(err);
-    fs.createReadStream(filename).pipe(transactionFormatters[msg.csv.source]()).pipe(matcher.getLimitDates(ondates));
+    fs.createReadStream(filename).pipe(csvFormatter()).pipe(matcher.getLimitDates(ondates));
   };
 
   const matcher = matchbox();
+  const csvFormatter = transactionFormatters[msg.csv.source];
+  const emailFormatter = emailFormatters[msg.email.source];
+  const emails = emailSources[msg.email.source];
+  if (!emails || !emailFormatter || !csvFormatter) return cb(new Error('Invalid source.'));
+
   const file = new Buffer(msg.csv.data, 'base64');
   const filename = os.tmpDir() + '/match-csv' +  Date.now() + Math.random() +  '.csv'
   fs.writeFile(filename, file, onwrite);
