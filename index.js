@@ -48,3 +48,5 @@ const match = function(msg, cb) {
   const filename = os.tmpDir() + '/match-csv' +  Date.now() + Math.random() +  '.csv'
   fs.writeFile(filename, file, onwrite);
 };
+
+export default match;

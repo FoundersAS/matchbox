@@ -1,33 +1,17 @@
-import matcher from './index';
-import through from 'through2';
-import csv from 'csv-parser';
+import match from './index';
 import fs from 'fs';
-import from from 'from2';
 
-import getEmails from './emails';
-import format from './lib/formatters/transactions/sydbank';
-
-let m = matcher();
-fs.createReadStream('./transactions-utf8-3.csv').pipe(format()).pipe(m.getLimitDates(ondates));
-
-function ondates(dates) {
-  getEmails(dates).pipe(m.addEmails(onemailsadded));
-}
-
-function onemailsadded() {
-  fs.createReadStream('./transactions-utf8-3.csv').pipe(format())
-                                                  .pipe(m.addMatches())
-                                                  .pipe(result)
-}
-
-let i = 0;
-const result = through.obj(function(transaction, enc, cb) {
-  if (transaction.matches.length) {
-    console.log(transaction.text, '|',  transaction.matches.length);
-    console.log(transaction.matches.map(x => x.subject + ' from: ' + x.from));
-    ++i;
+match({
+  csv: {
+    source: 'sydbank',
+    data: fs.readFileSync('./csv.csv').toString('base64')
+  },
+  email: {
+    source: 'gmail',
+    auth: {
+      token: 'GMAIL-TOKEN-HERE'
+    }
   }
-  cb();
-}, function(cb) {
-  console.log(i);
+}, function(err, transactions) {
+  console.log(JSON.stringify(transactions, null, '  '));
 });
