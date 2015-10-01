@@ -1,94 +1,50 @@
-import through from 'through2';
-import levelup from 'levelup';
-import leveldown from 'leveldown';
-import crypto from 'crypto';
+import matchbox from './lib/matcher';
+import transactionFormatters from './lib/formatters/transactions';
+import emailFormatters from './lib/formatters/emails';
+import fs from 'fs';
+import Gmail from 'node-gmail-api';
 import concat from 'concat-stream';
 import os from 'os';
 
-const matcher = function(opts) {
-  const that = {};
-  const db = levelup(os.tmpDir() + '/invoice-matcher' +  Date.now() + Math.random(), {valueEncoding: 'json', db: opts.db || leveldown});
-
-  that.getLimitDates = function(callback) {
-    let earliest = Infinity;
-    let latest = -Infinity;
-    return through.obj(function(transaction, enc, cb) {
-      const date = transaction.date; 
-      if (date.getTime() < earliest) earliest = date.getTime();
-      if (date.getTime() > latest) latest = date.getTime();
-      cb();
-    }, function() {
-      callback({earliest: new Date(earliest), latest: new Date(latest)});
-    });
-  };
-
-  that.addEmails = function(callback) {
-    const key = function(email) {
-      const hash = function(string) {
-        return crypto.createHash('sha256').update(string).digest('hex');
-      };
-      return dateFormat(email.date) + '|' + hash(JSON.stringify(email));
+const emailSources = {
+  gmail: function(msg, daterange) {
+    const gmailDateRange = function(daterange) {
+      const from = daterange.from.getFullYear()  + '/' + 
+                   (daterange.from.getMonth() + 1) + '/' + 
+                   daterange.from.getDate();
+      const to = daterange.to.getFullYear()  + '/' + 
+                 (daterange.to.getMonth() + 1) + '/' + 
+                 daterange.to.getDate();
+      return `after:${from} before:${to}`;
     };
-
-    return through.obj(function(email, enc, cb) {
-      if (!email || !email.date) return;
-      db.put(key(email), email, cb);
-    }, callback);
-  };
-
-  that.addMatches = function() {
-    return  through.obj(function(transaction, enc, cb) {
-      const onemails = function(emails) {
-        match(transaction, emails, function(err, matches) {
-          if (err) return cb(err);
-          transaction.matches = matches;
-          cb(null, transaction);
-        });
-      }
-
-      const fiveDays = 1000 * 3600 * 24 * 5;
-      const gt = dateFormat(new Date(transaction.date.getTime() - fiveDays));
-      const lt = dateFormat(new Date(transaction.date.getTime() + fiveDays));
-      db.createValueStream({gt, lt}).pipe(concat(onemails));
-    });
+    const gmail = new Gmail(msg.email.auth.token);
+    return gmail.messages(gmailDateRange(daterange))
   }
+}
 
-  const dateFormat = function(date) {
-    let year = date.getFullYear().toString();
-    let month = (date.getMonth() + 1).toString();
-    let day = date.getDate().toString();
-
-    if (month.length === 1) month = '0' + month;
-    if (day.length === 1) day = '0' + day;
-
-    return year + month + day;
+const match = function(msg, cb) {
+  const onconcat = function(transactions) {
+    cb(null, transactions);
   };
 
-  const match = function(transaction, emails, cb) {
-    const switchCommasAndDots = function(str) {
-      return str.split('').map(function(chr) {
-        if (chr === '.') return ',';
-        if (chr === ',') return '.';
-        return chr;
-      }).join('');
-    };
-
-    const containsAmount = function(amount, str) {
-      str = str || '';
-      if (!amount) return false;
-      const amounts = str.match(/[\d.,]+/g) || [];
-      return amounts.indexOf(amount) !== -1 || amounts.indexOf(switchCommasAndDots(amount)) !== -1;
-    };
-
-    const fiveDays = 1000 * 3600 * 24 * 5;
-    const closeEmails = emails.map(email => {email.date = new Date(email.date); return email})
-                              .filter(email => Math.abs(email.date.getTime() - transaction.date.getTime()) < fiveDays);
-    cb(null, closeEmails.filter(function(email)  {
-      return containsAmount(transaction.amount, email.message);
-    }));
+  const onemailsadded = function() {
+    fs.createReadStream(filename).pipe(transactionFormatters[msg.csv.source]())
+                                 .pipe(matcher.addMatches())
+                                 .pipe(concat(onconcat));
   };
 
-  return that;
+  const ondates = function(daterange) {
+    emailSources[msg.email.source](msg, daterange).pipe(emailFormatters[msg.email.source](msg.email.auth.token))
+                                                  .pipe(matcher.addEmails(onemailsadded));
+  };
+
+  const onwrite = function(err) {
+    if (err) return cb(err);
+    fs.createReadStream(filename).pipe(transactionFormatters[msg.csv.source]()).pipe(matcher.getLimitDates(ondates));
+  };
+
+  const matcher = matchbox();
+  const file = new Buffer(msg.csv.data, 'base64');
+  const filename = os.tmpDir() + '/match-csv' +  Date.now() + Math.random() +  '.csv'
+  fs.writeFile(filename, file, onwrite);
 };
-
-export default matcher;
