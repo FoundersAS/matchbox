@@ -1,5 +1,5 @@
 import test from 'tape';
-import matcher from './';
+import matcher from '../lib/matcher/';
 import from from 'from2';
 import concat from  'concat-stream';
 
