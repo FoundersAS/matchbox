@@ -2,7 +2,7 @@
   "name": "matchbox",
   "version": "0.0.0",
   "description": "matchbox ========",
-  "main": "index.js",
+  "main": "dist/index.js",
   "dependencies": {
     "babel": "^5.8.23",
     "concat-stream": "^1.5.0",
@@ -24,7 +24,8 @@
     "textract": "^1.1.1"
   },
   "scripts": {
-    "test": "tape test/main.js"
+    "test": "tape test/main.js",
+    "build": "babel . -d dist/ --ignore ./node_modules"
   },
   "repository": {
     "type": "git",
