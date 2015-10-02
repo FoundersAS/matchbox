@@ -20,5 +20,5 @@ test('sydbank parser', function(t) {
     t.equal(transactions[2].date.getTime(), new Date('2015-08-04').getTime());
     t.end();
   };
-  fs.createReadStream('./sydbank.csv').pipe(sydbank()).pipe(concat(onconcat));
+  fs.createReadStream(__dirname + '/sydbank.csv').pipe(sydbank()).pipe(concat(onconcat));
 });
