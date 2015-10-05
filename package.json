@@ -1,6 +1,6 @@
 {
   "name": "matchbox",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "matchbox ========",
   "main": "dist/index.js",
   "dependencies": {
