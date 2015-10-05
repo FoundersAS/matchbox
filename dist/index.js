@@ -34,22 +34,32 @@ var _libEmailSources = require('./lib/email-sources');
 
 var _libEmailSources2 = _interopRequireDefault(_libEmailSources);
 
+var _pump = require('pump');
+
+var _pump2 = _interopRequireDefault(_pump);
+
 var match = function match(msg, cb) {
   var onconcat = function onconcat(transactions) {
     cb(null, transactions);
   };
 
   var onemailsadded = function onemailsadded() {
-    _fs2['default'].createReadStream(filename).pipe(csvFormatter()).pipe(matcher.addMatches()).pipe((0, _concatStream2['default'])(onconcat));
+    (0, _pump2['default'])(_fs2['default'].createReadStream(filename), csvFormatter(), matcher.addMatches(), (0, _concatStream2['default'])(onconcat), function (err) {
+      if (err) cb(err);
+    });
   };
 
   var ondates = function ondates(daterange) {
-    emails(msg, daterange).pipe(emailFormatter(msg.email.auth.token)).pipe(matcher.addEmails(onemailsadded));
+    (0, _pump2['default'])(emails(msg, daterange), emailFormatter(msg.email.auth.token), matcher.addEmails(onemailsadded), function (err) {
+      if (err) cb(err);
+    });
   };
 
   var onwrite = function onwrite(err) {
     if (err) return cb(err);
-    _fs2['default'].createReadStream(filename).pipe(csvFormatter()).pipe(matcher.getLimitDates(ondates));
+    (0, _pump2['default'])(_fs2['default'].createReadStream(filename), csvFormatter(), matcher.getLimitDates(ondates), function (err) {
+      if (err) cb(err);
+    });
   };
 
   var matcher = (0, _libMatcher2['default'])();
