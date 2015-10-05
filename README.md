@@ -26,3 +26,4 @@ match({
   console.log(JSON.stringify(transactions, null, '  '));
 });
 ```
+This module requires `pdftotext` to be installed in order to match against PDF invoices.
