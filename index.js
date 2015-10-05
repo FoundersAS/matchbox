@@ -5,6 +5,7 @@ import fs from 'fs';
 import concat from 'concat-stream';
 import os from 'os';
 import emailSources from './lib/email-sources';
+import pump from 'pump';
 
 const match = function(msg, cb) {
   const onconcat = function(transactions) {
@@ -12,19 +13,38 @@ const match = function(msg, cb) {
   };
 
   const onemailsadded = function() {
-    fs.createReadStream(filename).pipe(csvFormatter())
-                                 .pipe(matcher.addMatches())
-                                 .pipe(concat(onconcat));
+    pump(
+      fs.createReadStream(filename),
+      csvFormatter(),
+      matcher.addMatches(),
+      concat(onconcat),
+      function(err) {
+        if (err) cb(err);
+      }
+    );
   };
 
   const ondates = function(daterange) {
-    emails(msg, daterange).pipe(emailFormatter(msg.email.auth.token))
-                                                  .pipe(matcher.addEmails(onemailsadded));
+    pump(
+      emails(msg, daterange),
+      emailFormatter(msg.email.auth.token),
+      matcher.addEmails(onemailsadded),
+      function(err) {
+        if (err) cb(err);
+      }
+    )
   };
 
   const onwrite = function(err) {
     if (err) return cb(err);
-    fs.createReadStream(filename).pipe(csvFormatter()).pipe(matcher.getLimitDates(ondates));
+    pump(
+      fs.createReadStream(filename),
+      csvFormatter(),
+      matcher.getLimitDates(ondates),
+      function(err) {
+        if (err) cb(err);
+      }
+    );
   };
 
   const matcher = matchbox();

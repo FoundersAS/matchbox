@@ -13,6 +13,7 @@
     "levelup": "^1.2.1",
     "ndjson": "^1.4.2",
     "node-gmail-api": "^0.4.0",
+    "pump": "^1.0.0",
     "pumpify": "^1.3.3",
     "request": "^2.63.0",
     "textract": "^1.1.1",
