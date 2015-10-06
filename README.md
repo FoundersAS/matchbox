@@ -2,6 +2,7 @@ matchbox
 ========
 
 ![matchbox.jpg](matchbox.jpg)
+![https://travis-ci.org/FoundersAS/matchbox.svg?branch=master](https://travis-ci.org/FoundersAS/matchbox.svg?branch=master)
 
 This module matches a list of transactions with possible invoices from a list of emails.
 it fetches emails from different supported email sources. Right now only gmail is supported.
